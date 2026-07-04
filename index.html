@@ -567,6 +567,7 @@
             renderWeekSelector();
             renderDashboard();
             initializeDragAndDrop();
+            attachDecimalRounding(document.getElementById('metricsForm'));
             refreshFromSheet(true);
         }
 
@@ -739,7 +740,7 @@
                 } else if (m.direction === 'none') {
                     statusBadge = `<span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-500"><i class="fa-solid fa-circle-minus mr-1"></i> Tracked</span>`;
                 } else if (failing) {
-                    statusBadge = `<span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-rose-100 text-rose-700 border border-rose-200"><i class="fa-solid fa-circle-exclamation mr-1"></i> Below Target</span>`;
+                    statusBadge = `<span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-rose-100 text-rose-700 border border-rose-200"><i class="fa-solid fa-circle-exclamation mr-1"></i> Off Target</span>`;
                 } else {
                     statusBadge = `<span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 border border-emerald-200"><i class="fa-solid fa-circle-check mr-1"></i> Target Met</span>`;
                 }
@@ -875,6 +876,18 @@
         function directionHint(m) {
             return m.direction === 'min' ? 'minimum' : 'maximum';
         }
+        function attachDecimalRounding(container) {
+            if (!container) return;
+            container.querySelectorAll('input[type="number"]').forEach(input => {
+                input.addEventListener('blur', () => {
+                    if (input.value === '') return;
+                    const num = parseFloat(input.value);
+                    if (isNaN(num)) return;
+                    input.value = (input.step === '1') ? String(Math.round(num)) : (Math.round(num * 100) / 100).toFixed(2);
+                });
+            });
+        }
+
         function buildTargetsForm() {
             const list = document.getElementById('targetsFieldList');
             const current = storeTargets[activeStore] || {};
@@ -886,13 +899,14 @@
                     </div>
                     <div class="flex items-center gap-1.5 shrink-0">
                         ${m.format === 'usd' ? '<span class="text-slate-400 text-sm">$</span>' : ''}
-                        <input type="number" step="0.01" data-target-key="${m.key}"
+                        <input type="number" step="${m.format === 'count' ? '1' : '0.01'}" data-target-key="${m.key}"
                             value="${current[m.key] ?? ''}"
                             class="w-24 border border-slate-200 rounded-lg px-3 py-1.5 text-sm text-right outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500">
                         ${m.format !== 'usd' ? `<span class="text-slate-400 text-xs w-4">${unitSuffix(m)}</span>` : '<span class="w-4"></span>'}
                     </div>
                 </div>
             `).join('');
+            attachDecimalRounding(list);
         }
         const DIRECTOR_PASSWORD = "cupofice";
 
@@ -964,7 +978,9 @@
             inputs.forEach(input => {
                 const key = input.dataset.targetKey;
                 const val = input.value;
-                storeTargets[store][key] = val === '' ? null : parseFloat(val);
+                if (val === '') { storeTargets[store][key] = null; return; }
+                const num = parseFloat(val);
+                storeTargets[store][key] = (input.step === '1') ? Math.round(num) : Math.round(num * 100) / 100;
             });
             closeTargetsModal();
             renderDashboard();
@@ -1014,8 +1030,12 @@
             setTimeout(() => modal.classList.add('hidden'), 100);
         }
         function getNumericOrNull(id) {
-            const val = document.getElementById(id).value;
-            return val === '' ? null : parseFloat(val);
+            const el = document.getElementById(id);
+            const val = el.value;
+            if (val === '') return null;
+            const num = parseFloat(val);
+            if (isNaN(num)) return null;
+            return (el.step === '1') ? Math.round(num) : Math.round(num * 100) / 100;
         }
         function getTextOrNull(id) {
             const val = document.getElementById(id).value.trim();
@@ -1260,7 +1280,7 @@
                 } else if (m.direction === 'none') {
                     statusHtml = `<span style="color:#94a3b8; font-weight:700;">Tracked</span>`;
                 } else if (failing) {
-                    statusHtml = `<span style="color:#e11d48; font-weight:700;">● Below Target</span>`;
+                    statusHtml = `<span style="color:#e11d48; font-weight:700;">● Off Target</span>`;
                     rowBg = '#fff1f2';
                 } else {
                     statusHtml = `<span style="color:#059669; font-weight:700;">● Target Met</span>`;
@@ -1302,7 +1322,7 @@
                             </div>
                             <div style="display:flex; gap:10px;">
                                 ${snapshotChip('Met', counts.met, '#10b981')}
-                                ${snapshotChip('Below Target', counts.below, '#f43f5e')}
+                                ${snapshotChip('Off Target', counts.below, '#f43f5e')}
                                 ${snapshotChip('Missing', counts.missing, '#94a3b8')}
                             </div>
                         </div>
