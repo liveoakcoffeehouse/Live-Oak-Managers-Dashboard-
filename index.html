@@ -455,21 +455,14 @@
             };
         }
 
-        async function startNewWeek() {
+        function startNewWeek() {
             const weeks = storeData[activeStore].weeks;
             const week = zeroWeek(`New Week ${weeks.length + 1}`);
             weeks.push(week);
             activeWeekIndex = weeks.length - 1;
             renderWeekSelector();
             renderDashboard();
-            showToast(`${activeStore} — new week started with all metrics at zero. Edit the week label and fill in numbers as they come in.`, 'info');
-
-            try {
-                await syncWeekToSheet(activeStore, week);
-            } catch (err) {
-                console.error('New week sync failed:', err);
-                showToast(`${activeStore} — new week saved locally, but sync to Sheet failed.`, 'error');
-            }
+            showToast(`${activeStore} — new week started locally with all metrics at zero. It won't sync to the Sheet until you save it via "Add / Edit Week" with a real label.`, 'info');
         }
 
         // ---------- Seed data ----------
@@ -1093,6 +1086,7 @@
             document.getElementById('inputMarketingCoupons').value = data.marketingCoupons ?? '';
 
             modal.dataset.editing = editing ? 'true' : 'false';
+            modal.dataset.openingLabel = data.weekLabel || '';
             modal.classList.remove('hidden');
             setTimeout(() => { content.classList.remove('scale-95'); content.classList.add('scale-100'); }, 10);
         }
@@ -1140,6 +1134,8 @@
                 marketingCoupons: getTextOrNull('inputMarketingCoupons')
             };
 
+            const labelChanged = week.weekLabel !== (modal.dataset.openingLabel || '');
+
             if (editing) {
                 weeks[activeWeekIndex] = week;
             } else {
@@ -1153,7 +1149,14 @@
 
             try {
                 await syncWeekToSheet(store, week);
-                showToast(`${store} — ${week.weekLabel} saved & synced to Sheet.`, 'success');
+                if (labelChanged) {
+                    // Label edits are the case most likely to leave a stray row behind
+                    // (old label vs new label don't match on upsert), so pull the Sheet's
+                    // actual state back in to confirm what really landed.
+                    await refreshFromSheet(false);
+                } else {
+                    showToast(`${store} — ${week.weekLabel} saved & synced to Sheet.`, 'success');
+                }
             } catch (err) {
                 console.error('Week sync failed:', err);
                 showToast(`${store} — ${week.weekLabel} saved locally, but sync to Sheet failed.`, 'error');
