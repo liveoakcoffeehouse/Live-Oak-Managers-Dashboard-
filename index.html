@@ -6,7 +6,7 @@
     <title>Live Oak Coffeehouse — Shop Metrics Scorecard Dashboard</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
-        // Brand palette sourced from the Little Midland branding reference:
+        // Brand palette sourced from the Little Midtown branding reference:
         // navy (brand), terracotta (accent), sage green (success), red (danger), cream.
         tailwind.config = {
             theme: {
@@ -440,8 +440,8 @@
 
     <script>
         // ---------- Store setup ----------
-        const stores = ["Midland", "Eastside", "Uptown", "Freeland", "Valley"];
-        let activeStore = "Midland";
+        const stores = ["Midtown", "Eastside", "Uptown", "Freeland", "Valley"];
+        let activeStore = "Midtown";
         let activeWeekIndex = 0; // index into storeData[activeStore].weeks
 
         // ---------- Metric schema ----------
@@ -523,9 +523,9 @@
         }
 
         // ---------- Seed data ----------
-        // Midland: real scorecard values from the manager's tracking sheet (week of 3/24 - 3/30)
+        // Midtown: real scorecard values from the manager's tracking sheet (week of 3/24 - 3/30)
         let storeData = {
-            "Midland": { weeks: [{
+            "Midtown": { weeks: [{
                 weekLabel: "sun 3/24 – sat 3/30",
                 weeklySalesPct: 4, monthlySalesGrowthPct: 1, avgWeeklyTicket: 10.35,
                 laborDeviation: -3.9, scheduledHours: 191, oneOnOnesCount: 4,
