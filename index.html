@@ -107,7 +107,7 @@
     <div id="toastContainer" class="fixed top-5 right-5 z-50 space-y-3 pointer-events-none"></div>
     <div id="snapshotContainer" style="position:fixed; top:-99999px; left:-99999px;"></div>
 
-    <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 overflow-y-auto">
+    <main id="mainStoreView" class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 overflow-y-auto">
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
 
             <!-- Left Panel -->
@@ -186,6 +186,15 @@
                             <tbody class="divide-y divide-slate-100 text-sm font-medium" id="metricsTableBody"></tbody>
                         </table>
                     </div>
+                </div>
+
+                <!-- SMART Goals (director-managed, read-only here) -->
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                    <div class="p-5 border-b border-slate-200 flex justify-between items-center bg-slate-50/50">
+                        <h3 class="font-bold text-slate-800 text-sm tracking-wide uppercase"><i class="fa-solid fa-bullseye mr-2 text-accent-600"></i>SMART Goals</h3>
+                        <span class="text-xs text-slate-400">Set by the Director team</span>
+                    </div>
+                    <div id="storeGoalsList" class="p-5 space-y-3"></div>
                 </div>
 
                 <!-- Trend Chart -->
@@ -311,6 +320,88 @@
             </div>
         </div>
     </main>
+
+    <!-- Directors View: company-wide health + SMART goals management -->
+    <div id="directorsView" class="hidden flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 overflow-y-auto">
+        <div class="mb-6">
+            <h2 class="text-2xl font-extrabold text-slate-900 flex items-center gap-2"><i class="fa-solid fa-user-shield text-accent-500"></i> Director Overview</h2>
+            <p class="text-slate-500 text-sm mt-1">Company-wide health across all storefronts, current focus areas, and SMART goals.</p>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8" id="companyHealthCards"></div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+            <div class="lg:col-span-7 space-y-6">
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                    <div class="p-5 border-b border-slate-200 bg-slate-50/50">
+                        <h3 class="font-bold text-slate-800 text-sm tracking-wide uppercase"><i class="fa-solid fa-triangle-exclamation mr-2 text-danger-600"></i>Current Focus Areas</h3>
+                        <p class="text-xs text-slate-400 mt-1">Metrics off target on each store's most recent logged week, worst stores first.</p>
+                    </div>
+                    <div id="focusAreasList" class="divide-y divide-slate-100"></div>
+                </div>
+
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                    <div class="p-5 border-b border-slate-200 bg-slate-50/50">
+                        <h3 class="font-bold text-slate-800 text-sm tracking-wide uppercase"><i class="fa-solid fa-chart-simple mr-2 text-brand-600"></i>Company Averages by Metric</h3>
+                        <p class="text-xs text-slate-400 mt-1">Averaged across every store's most recent logged week.</p>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="border-b border-slate-200 text-slate-400 text-[11px] font-bold uppercase tracking-wider bg-slate-50/25">
+                                    <th class="px-6 py-3">Metric</th>
+                                    <th class="px-6 py-3 text-right">Company Avg</th>
+                                    <th class="px-6 py-3 text-right">Stores Reporting</th>
+                                    <th class="px-6 py-3 text-center">Off Target</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100 text-sm font-medium" id="companyAveragesBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div class="lg:col-span-5 space-y-6">
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 space-y-4">
+                    <div>
+                        <h3 class="text-lg font-bold text-slate-900 flex items-center gap-2"><i class="fa-solid fa-bullseye text-accent-500"></i> Manage SMART Goals</h3>
+                        <p class="text-slate-500 text-xs mt-1">Set goals per store. They show up read-only on that store's own tab, and are never included in snapshot exports.</p>
+                    </div>
+                    <form id="goalForm" class="space-y-3 bg-slate-50 p-4 rounded-xl border border-slate-100">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Store</label>
+                            <select id="goalStoreSelect" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-brand-500/20"></select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Goal (Specific &amp; Relevant)</label>
+                            <textarea id="goalText" rows="2" placeholder="e.g. Get Daily 5's completion above 12 per week by working morning huddles" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-brand-500/20"></textarea>
+                        </div>
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Linked Metric (Measurable)</label>
+                                <select id="goalMetricSelect" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-brand-500/20"></select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Target Value (Achievable)</label>
+                                <input type="number" step="0.01" id="goalTargetValue" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-brand-500/20">
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Target Date (Time-bound)</label>
+                            <input type="date" id="goalTargetDate" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-brand-500/20">
+                        </div>
+                        <div class="flex justify-end gap-2 pt-1">
+                            <button type="button" id="goalCancelEditBtn" class="hidden px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl text-xs font-semibold transition">Cancel Edit</button>
+                            <button type="submit" class="px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white rounded-xl text-xs font-semibold transition shadow-md shadow-brand-600/15">
+                                <i class="fa-solid fa-plus mr-1"></i><span id="goalSubmitLabel">Add Goal</span>
+                            </button>
+                        </div>
+                    </form>
+                    <div id="goalsManageList" class="space-y-3"></div>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <!-- Modal: Add / Edit Week -->
     <div id="modalForm" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
@@ -443,6 +534,7 @@
         const stores = ["Midtown", "Eastside", "Uptown", "Freeland", "Valley"];
         let activeStore = "Midtown";
         let activeWeekIndex = 0; // index into storeData[activeStore].weeks
+        let currentView = 'store'; // 'store' | 'directors'
 
         // ---------- Metric schema ----------
         // direction: 'min' = value should be >= target (fail if below)
@@ -475,6 +567,18 @@
         function seedTargetsForStore(store) {
             storeTargets[store] = {};
             METRICS.forEach(m => { storeTargets[store][m.key] = m.defaultTarget; });
+        }
+
+        // ---------- Per-store SMART goals (director-managed) ----------
+        // Goals are informational targets a director sets for a store (e.g. "Get Daily
+        // 5's above 10 by Nov 1"). They're shown read-only on the store's own tab and
+        // are only ever edited from the Directors tab. Never included in snapshot exports.
+        let storeGoals = {};
+        function seedGoalsForStore(store) {
+            storeGoals[store] = [];
+        }
+        function makeGoalId() {
+            return 'g' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
         }
 
         function getTarget(store, key) {
@@ -616,6 +720,21 @@
             return row;
         }
 
+        // Goals are a variable-length list per store, so unlike weeks/targets (one
+        // column per field) they're synced as a single JSON blob column — keeps the
+        // Sheet/Apps Script side to a plain per-store upsert, same shape as Targets.
+        function goalsToSheetRow(store, goals) {
+            return { Store: store, GoalsJson: JSON.stringify(goals || []) };
+        }
+        function sheetRowToGoals(row) {
+            try {
+                const parsed = JSON.parse(row.GoalsJson || '[]');
+                return Array.isArray(parsed) ? parsed : [];
+            } catch (e) {
+                return [];
+            }
+        }
+
         // Pulls all weeks + targets from the Sheet and replaces in-memory state with it.
         // Returns true on success, false if the Sheet couldn't be reached/parsed.
         async function loadFromSheet() {
@@ -639,6 +758,13 @@
                         storeTargets[row.Store][field] = (val === '' || val === undefined || val === null) ? null : Number(val);
                     });
                 });
+
+                stores.forEach(seedGoalsForStore);
+                (json.goals || []).forEach(row => {
+                    if (!stores.includes(row.Store)) return;
+                    storeGoals[row.Store] = sheetRowToGoals(row);
+                });
+
                 return true;
             } catch (err) {
                 console.error('Sheet load failed:', err);
@@ -668,6 +794,17 @@
             if (!json.ok) throw new Error(json.error || 'Sync failed');
         }
 
+        async function syncGoalsToSheet(store, goals) {
+            const payload = { syncKey: SYNC_KEY, action: 'saveGoals', data: goalsToSheetRow(store, goals) };
+            const res = await fetch(SHEET_API_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                body: JSON.stringify(payload)
+            });
+            const json = await res.json();
+            if (!json.ok) throw new Error(json.error || 'Sync failed');
+        }
+
         async function refreshFromSheet(isInitialLoad) {
             showToast(isInitialLoad ? 'Loading data from Google Sheet…' : 'Refreshing from Google Sheet…', 'info');
             const success = await loadFromSheet();
@@ -675,6 +812,7 @@
             renderTabs();
             renderWeekSelector();
             renderDashboard();
+            if (currentView === 'directors') renderDirectorsView();
             showToast(success ? 'Loaded latest data from Google Sheet.' : 'Could not reach Google Sheet — showing local data only.', success ? 'success' : 'error');
         }
 
@@ -686,6 +824,8 @@
 
         function initDashboard() {
             stores.forEach(seedTargetsForStore);
+            stores.forEach(seedGoalsForStore);
+            populateGoalFormSelectors();
             renderTabs();
             renderWeekSelector();
             renderDashboard();
@@ -732,15 +872,18 @@
             const tabsContainer = document.getElementById('tabsContainer');
             tabsContainer.innerHTML = '';
             stores.forEach(store => {
-                const isActive = store === activeStore;
+                const isActive = currentView === 'store' && store === activeStore;
                 const tab = document.createElement('button');
                 tab.className = `whitespace-nowrap py-4 px-1 border-b-2 font-bold text-sm transition-all focus:outline-none ${
                     isActive ? 'border-brand-600 text-brand-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
                 }`;
                 tab.innerHTML = `<i class="fa-solid fa-store mr-1.5"></i> ${store}`;
                 tab.addEventListener('click', () => {
+                    currentView = 'store';
                     activeStore = store;
                     activeWeekIndex = Math.max(0, storeData[activeStore].weeks.length - 1);
+                    document.getElementById('directorsView').classList.add('hidden');
+                    document.getElementById('mainStoreView').classList.remove('hidden');
                     renderTabs();
                     renderWeekSelector();
                     renderDashboard();
@@ -748,6 +891,29 @@
                 });
                 tabsContainer.appendChild(tab);
             });
+
+            const directorsTab = document.createElement('button');
+            const directorsActive = currentView === 'directors';
+            directorsTab.className = `whitespace-nowrap py-4 px-1 border-b-2 font-bold text-sm transition-all focus:outline-none ${
+                directorsActive ? 'border-accent-500 text-accent-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
+            }`;
+            directorsTab.innerHTML = `<i class="fa-solid fa-user-shield mr-1.5"></i> Directors`;
+            directorsTab.addEventListener('click', () => {
+                if (isDirectorUnlocked()) {
+                    switchToDirectorsView();
+                } else {
+                    openDirectorGateModal('directorsTab');
+                }
+            });
+            tabsContainer.appendChild(directorsTab);
+        }
+
+        function switchToDirectorsView() {
+            currentView = 'directors';
+            document.getElementById('mainStoreView').classList.add('hidden');
+            document.getElementById('directorsView').classList.remove('hidden');
+            renderTabs();
+            renderDirectorsView();
         }
 
         // ---------- Week selector ----------
@@ -884,6 +1050,7 @@
 
             renderTrendChart(weeks);
             generateLiveInsights(data, weeks.length);
+            renderStoreGoalsSection();
         }
 
         function updateSummaryCard(cardId, textId, iconId, targetTextId, metric, val, target) {
@@ -1032,6 +1199,7 @@
             attachDecimalRounding(list);
         }
         const DIRECTOR_PASSWORD = "cupofice";
+        let directorGatePurpose = 'targets'; // 'targets' | 'directorsTab' — decides what the gate opens on success
 
         function isDirectorUnlocked() {
             try { return sessionStorage.getItem('lo_director_unlocked') === 'true'; } catch (e) { return false; }
@@ -1044,11 +1212,12 @@
             if (isDirectorUnlocked()) {
                 showTargetsModal();
             } else {
-                openDirectorGateModal();
+                openDirectorGateModal('targets');
             }
         }
 
-        function openDirectorGateModal() {
+        function openDirectorGateModal(purpose) {
+            directorGatePurpose = purpose || 'targets';
             document.getElementById('directorPasswordInput').value = '';
             document.getElementById('directorPasswordError').classList.add('hidden');
             const modal = document.getElementById('modalDirectorGate');
@@ -1070,7 +1239,11 @@
             if (input.value === DIRECTOR_PASSWORD) {
                 setDirectorUnlocked();
                 closeDirectorGateModal();
-                showTargetsModal();
+                if (directorGatePurpose === 'directorsTab') {
+                    switchToDirectorsView();
+                } else {
+                    showTargetsModal();
+                }
             } else {
                 error.classList.remove('hidden');
                 input.value = '';
@@ -1354,6 +1527,363 @@
             }
         }
         function capitalize(string) { return string.charAt(0).toUpperCase() + string.slice(1); }
+
+        // ---------- SMART Goals: shared helpers ----------
+        function goalMetricLabel(key) {
+            const m = METRICS.find(x => x.key === key);
+            return m ? m.label : null;
+        }
+
+        function latestWeekFor(store) {
+            const weeks = storeData[store].weeks;
+            return weeks.length ? weeks[weeks.length - 1] : null;
+        }
+
+        function computeGoalProgress(goal, store) {
+            if (goal.status === 'achieved') return { label: 'Achieved', tone: 'good' };
+            const week = latestWeekFor(store);
+            const metric = METRICS.find(m => m.key === goal.metricKey);
+            const overdue = !!(goal.targetDate && new Date(goal.targetDate) < new Date(new Date().toDateString()));
+
+            if (metric && goal.targetValue !== null && goal.targetValue !== undefined && week) {
+                const current = week[metric.key];
+                if (current !== null && current !== undefined && current !== '') {
+                    const onTrack = metric.direction === 'max' ? Number(current) <= Number(goal.targetValue) : Number(current) >= Number(goal.targetValue);
+                    return {
+                        label: onTrack ? 'On Track' : (overdue ? 'Overdue' : 'Off Track'),
+                        tone: onTrack ? 'good' : 'bad',
+                        detail: `Currently ${formatVal(metric, current)} vs goal of ${formatVal(metric, goal.targetValue)}`
+                    };
+                }
+            }
+            return { label: overdue ? 'Overdue' : 'Active', tone: overdue ? 'bad' : 'neutral' };
+        }
+
+        function goalStatusBadge(tone, label) {
+            const cls = tone === 'good' ? 'bg-success-100 text-success-800 border-success-200' :
+                        tone === 'bad' ? 'bg-danger-100 text-danger-700 border-danger-200' :
+                        'bg-slate-100 text-slate-600 border-slate-200';
+            return `<span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold border ${cls}">${label}</span>`;
+        }
+
+        // ---------- SMART Goals: read-only section on each store's own tab ----------
+        function renderStoreGoalsSection() {
+            const list = document.getElementById('storeGoalsList');
+            const goals = storeGoals[activeStore] || [];
+            if (goals.length === 0) {
+                list.innerHTML = `<p class="text-sm text-slate-400">No goals set for this store yet — ask a director to add one from the Directors tab.</p>`;
+                return;
+            }
+            list.innerHTML = goals.map(goal => {
+                const progress = computeGoalProgress(goal, activeStore);
+                const dateLabel = goal.targetDate ? new Date(goal.targetDate + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : null;
+                return `
+                    <div class="border border-slate-100 rounded-xl p-4 bg-slate-50/40">
+                        <div class="flex items-start justify-between gap-3">
+                            <p class="text-sm font-semibold text-slate-800">${goal.text}</p>
+                            ${goalStatusBadge(progress.tone, progress.label)}
+                        </div>
+                        ${progress.detail ? `<p class="text-xs text-slate-500 mt-1.5">${progress.detail}</p>` : ''}
+                        ${dateLabel ? `<p class="text-[11px] text-slate-400 mt-1.5"><i class="fa-regular fa-calendar mr-1"></i>Target: ${dateLabel}</p>` : ''}
+                    </div>`;
+            }).join('');
+        }
+
+        // ---------- Directors View: company health + focus areas ----------
+        function companyHealthCard(label, value, sub, tone) {
+            const toneClass = tone === 'good' ? 'text-success-700' : tone === 'bad' ? 'text-danger-600' : 'text-slate-900';
+            const bgClass = tone === 'good' ? 'bg-success-50/30 border-success-200' : tone === 'bad' ? 'bg-danger-50/50 border-danger-200' : 'bg-white border-slate-200';
+            return `
+                <div class="${bgClass} p-5 rounded-2xl shadow-sm border">
+                    <div class="text-slate-400 font-semibold text-xs uppercase tracking-wide">${label}</div>
+                    <div class="text-2xl font-black mt-1 ${toneClass}">${value}</div>
+                    <div class="text-xs text-slate-500 mt-2">${sub}</div>
+                </div>`;
+        }
+
+        function renderCompanyHealthCards() {
+            let totalMet = 0, totalOff = 0, storesReporting = 0;
+            stores.forEach(store => {
+                const week = latestWeekFor(store);
+                if (!week) return;
+                storesReporting++;
+                const counts = computeStatusCounts(store, week);
+                totalMet += counts.met; totalOff += counts.below;
+            });
+            const totalTracked = totalMet + totalOff;
+            const healthPct = totalTracked > 0 ? Math.round((totalMet / totalTracked) * 100) : null;
+
+            document.getElementById('companyHealthCards').innerHTML = [
+                companyHealthCard(
+                    'Company Health',
+                    healthPct === null ? '—' : `${healthPct}%`,
+                    `${totalMet} of ${totalTracked} tracked metrics on target`,
+                    healthPct === null ? 'neutral' : healthPct >= 80 ? 'good' : 'bad'
+                ),
+                companyHealthCard(
+                    'Off-Target Metrics',
+                    `${totalOff}`,
+                    'Across all storefronts, latest logged week',
+                    totalOff === 0 ? 'good' : 'bad'
+                ),
+                companyHealthCard(
+                    'Stores Reporting',
+                    `${storesReporting} / ${stores.length}`,
+                    storesReporting === stores.length ? 'All storefronts have logged a week' : `${stores.length - storesReporting} store(s) haven't logged a week yet`,
+                    storesReporting === stores.length ? 'good' : 'neutral'
+                )
+            ].join('');
+        }
+
+        function renderFocusAreas() {
+            const list = document.getElementById('focusAreasList');
+            const items = [];
+
+            stores.forEach(store => {
+                const week = latestWeekFor(store);
+                if (!week) {
+                    items.push({ store, noData: true });
+                    return;
+                }
+                METRICS.forEach(m => {
+                    if (m.direction === 'none') return;
+                    const val = week[m.key];
+                    const target = getTarget(store, m.key);
+                    if (isFailing(m, val, target)) {
+                        items.push({ store, metric: m, val, target });
+                    }
+                });
+            });
+
+            if (items.length === 0) {
+                list.innerHTML = `<div class="p-6 text-sm text-slate-400 flex items-center gap-2"><i class="fa-solid fa-circle-check text-success-500"></i> No off-target metrics on any store's latest logged week. Nice work.</div>`;
+                return;
+            }
+
+            const byStore = {};
+            items.forEach(i => { (byStore[i.store] = byStore[i.store] || []).push(i); });
+            const orderedStores = Object.keys(byStore).sort((a, b) => byStore[b].length - byStore[a].length);
+
+            list.innerHTML = orderedStores.map(store => {
+                const rows = byStore[store].map(i => {
+                    if (i.noData) {
+                        return `<div class="px-6 py-3 flex items-center justify-between text-sm">
+                            <span class="text-slate-500 font-medium">No weeks logged yet</span>
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-500">Needs data</span>
+                        </div>`;
+                    }
+                    return `<div class="px-6 py-3 flex items-center justify-between text-sm">
+                        <span class="text-slate-700 font-semibold">${i.metric.label}</span>
+                        <span class="text-right">
+                            <span class="font-black text-slate-900">${formatVal(i.metric, i.val)}</span>
+                            <span class="text-slate-400 text-xs ml-1">vs ${targetText(i.metric, i.target)}</span>
+                        </span>
+                    </div>`;
+                }).join('');
+                const offCount = byStore[store].filter(i => !i.noData).length;
+                return `
+                    <div>
+                        <div class="px-6 py-2.5 bg-slate-50/70 text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-2">
+                            <i class="fa-solid fa-store"></i> ${store}
+                            ${offCount > 0 ? `<span class="ml-auto inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-danger-100 text-danger-700">${offCount} off target</span>` : ''}
+                        </div>
+                        ${rows}
+                    </div>`;
+            }).join('');
+        }
+
+        function renderCompanyAverages() {
+            const tbody = document.getElementById('companyAveragesBody');
+            tbody.innerHTML = METRICS.filter(m => m.format !== 'text').map(m => {
+                const values = [];
+                let offTargetCount = 0, reporting = 0;
+                stores.forEach(store => {
+                    const week = latestWeekFor(store);
+                    if (!week) return;
+                    const val = week[m.key];
+                    if (val === null || val === undefined || val === '') return;
+                    reporting++;
+                    if (m.format === 'bool') {
+                        if (val === true) offTargetCount++;
+                        return;
+                    }
+                    values.push(Number(val));
+                    const target = getTarget(store, m.key);
+                    if (isFailing(m, val, target)) offTargetCount++;
+                });
+
+                let avgDisplay = '—';
+                if (m.format === 'bool') {
+                    avgDisplay = reporting ? `${offTargetCount} of ${reporting} flagged` : '—';
+                } else if (values.length) {
+                    const avg = values.reduce((a, b) => a + b, 0) / values.length;
+                    avgDisplay = formatVal(m, avg);
+                }
+
+                return `
+                    <tr class="hover:bg-slate-50 transition">
+                        <td class="px-6 py-3 font-bold text-slate-800 text-xs sm:text-sm">${m.label}</td>
+                        <td class="px-6 py-3 text-right font-black text-slate-900">${avgDisplay}</td>
+                        <td class="px-6 py-3 text-right text-slate-400 font-semibold">${reporting} / ${stores.length}</td>
+                        <td class="px-6 py-3 text-center">${
+                            m.direction === 'none' ? '<span class="text-slate-300">—</span>' :
+                            offTargetCount > 0 ? `<span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-danger-100 text-danger-700">${offTargetCount} store(s)</span>` :
+                            '<span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-success-100 text-success-800">0 stores</span>'
+                        }</td>
+                    </tr>`;
+            }).join('');
+        }
+
+        function renderDirectorsView() {
+            renderCompanyHealthCards();
+            renderFocusAreas();
+            renderCompanyAverages();
+            renderGoalsManager();
+        }
+
+        // ---------- Directors View: SMART goals manager ----------
+        let editingGoalId = null;
+
+        function populateGoalFormSelectors() {
+            const storeSelect = document.getElementById('goalStoreSelect');
+            storeSelect.innerHTML = stores.map(s => `<option value="${s}">${s}</option>`).join('');
+
+            const metricSelect = document.getElementById('goalMetricSelect');
+            metricSelect.innerHTML = `<option value="">None (text goal only)</option>` +
+                ADJUSTABLE_METRICS.map(m => `<option value="${m.key}">${m.label}</option>`).join('');
+        }
+
+        function resetGoalForm() {
+            editingGoalId = null;
+            document.getElementById('goalForm').reset();
+            document.getElementById('goalSubmitLabel').textContent = 'Add Goal';
+            document.getElementById('goalCancelEditBtn').classList.add('hidden');
+        }
+
+        function startEditGoal(store, goalId) {
+            const goal = (storeGoals[store] || []).find(g => g.id === goalId);
+            if (!goal) return;
+            editingGoalId = goalId;
+            document.getElementById('goalStoreSelect').value = store;
+            document.getElementById('goalText').value = goal.text;
+            document.getElementById('goalMetricSelect').value = goal.metricKey || '';
+            document.getElementById('goalTargetValue').value = goal.targetValue ?? '';
+            document.getElementById('goalTargetDate').value = goal.targetDate || '';
+            document.getElementById('goalSubmitLabel').textContent = 'Save Changes';
+            document.getElementById('goalCancelEditBtn').classList.remove('hidden');
+            document.getElementById('goalForm').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+
+        async function persistGoalsForStore(store) {
+            try {
+                await syncGoalsToSheet(store, storeGoals[store]);
+                showToast(`${store} goals synced to Sheet.`, 'success');
+            } catch (err) {
+                console.error('Goals sync failed:', err);
+                showToast(`${store} goals updated locally, but sync to Sheet failed.`, 'error');
+            }
+        }
+
+        async function deleteGoal(store, goalId) {
+            storeGoals[store] = (storeGoals[store] || []).filter(g => g.id !== goalId);
+            renderGoalsManager();
+            if (activeStore === store) renderStoreGoalsSection();
+            await persistGoalsForStore(store);
+        }
+
+        async function toggleGoalAchieved(store, goalId) {
+            const goal = (storeGoals[store] || []).find(g => g.id === goalId);
+            if (!goal) return;
+            goal.status = goal.status === 'achieved' ? 'active' : 'achieved';
+            renderGoalsManager();
+            if (activeStore === store) renderStoreGoalsSection();
+            await persistGoalsForStore(store);
+        }
+
+        function renderGoalsManager() {
+            const container = document.getElementById('goalsManageList');
+            const storesWithGoals = stores.filter(s => (storeGoals[s] || []).length > 0);
+            if (storesWithGoals.length === 0) {
+                container.innerHTML = `<p class="text-xs text-slate-400">No goals set yet. Use the form above to add the first one.</p>`;
+                return;
+            }
+            container.innerHTML = storesWithGoals.map(store => {
+                const rows = storeGoals[store].map(goal => {
+                    const progress = computeGoalProgress(goal, store);
+                    const metricLabel = goal.metricKey ? goalMetricLabel(goal.metricKey) : null;
+                    return `
+                        <div class="border border-slate-100 rounded-xl p-3 flex items-start justify-between gap-3">
+                            <div class="min-w-0">
+                                <p class="text-xs font-semibold text-slate-800">${goal.text}</p>
+                                <p class="text-[11px] text-slate-400 mt-1">${metricLabel ? `${metricLabel} → ${goal.targetValue ?? '—'}` : 'No linked metric'}${goal.targetDate ? ` · due ${goal.targetDate}` : ''}</p>
+                                <div class="mt-1.5">${goalStatusBadge(progress.tone, progress.label)}</div>
+                            </div>
+                            <div class="flex flex-col gap-1.5 shrink-0">
+                                <button type="button" data-goal-edit="${store}|${goal.id}" class="text-[11px] font-semibold text-brand-600 hover:text-brand-800">Edit</button>
+                                <button type="button" data-goal-toggle="${store}|${goal.id}" class="text-[11px] font-semibold text-success-700 hover:text-success-900">${goal.status === 'achieved' ? 'Reopen' : 'Mark Done'}</button>
+                                <button type="button" data-goal-delete="${store}|${goal.id}" class="text-[11px] font-semibold text-danger-600 hover:text-danger-800">Delete</button>
+                            </div>
+                        </div>`;
+                }).join('');
+                return `
+                    <div>
+                        <div class="text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-2">${store}</div>
+                        <div class="space-y-2">${rows}</div>
+                    </div>`;
+            }).join('');
+
+            container.querySelectorAll('[data-goal-edit]').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const [store, id] = btn.dataset.goalEdit.split('|');
+                    startEditGoal(store, id);
+                });
+            });
+            container.querySelectorAll('[data-goal-toggle]').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const [store, id] = btn.dataset.goalToggle.split('|');
+                    toggleGoalAchieved(store, id);
+                });
+            });
+            container.querySelectorAll('[data-goal-delete]').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const [store, id] = btn.dataset.goalDelete.split('|');
+                    if (confirm('Delete this goal?')) deleteGoal(store, id);
+                });
+            });
+        }
+
+        document.getElementById('goalCancelEditBtn').addEventListener('click', resetGoalForm);
+
+        document.getElementById('goalForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const store = document.getElementById('goalStoreSelect').value;
+            const text = document.getElementById('goalText').value.trim();
+            if (!text) { showToast('Enter a goal description first.', 'error'); return; }
+            const metricKey = document.getElementById('goalMetricSelect').value;
+            const targetValueRaw = document.getElementById('goalTargetValue').value;
+            const targetValue = targetValueRaw === '' ? null : parseFloat(targetValueRaw);
+            const targetDate = document.getElementById('goalTargetDate').value || '';
+
+            if (!storeGoals[store]) storeGoals[store] = [];
+
+            if (editingGoalId) {
+                const goal = storeGoals[store].find(g => g.id === editingGoalId);
+                if (goal) {
+                    goal.text = text; goal.metricKey = metricKey; goal.targetValue = targetValue; goal.targetDate = targetDate;
+                }
+            } else {
+                storeGoals[store].push({
+                    id: makeGoalId(), text, metricKey, targetValue, targetDate,
+                    status: 'active', createdAt: new Date().toISOString()
+                });
+            }
+
+            const savedStore = store;
+            resetGoalForm();
+            renderGoalsManager();
+            if (activeStore === savedStore) renderStoreGoalsSection();
+            await persistGoalsForStore(savedStore);
+        });
 
         // ---------- Save Snapshot (infographic export) ----------
         function computeStatusCounts(store, data) {
